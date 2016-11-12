@@ -1,0 +1,234 @@
+<!DOCTYPE html><html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta content="IE=edge" http-equiv="X-UA-Compatible">
+	<meta content="Learn how to use the Firebase platform on the Web" name="description">
+	<meta content="width=device-width, initial-scale=1.0" name="viewport">
+
+	<title>Awesome Chat</title>
+	<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+	<link href="https://code.getmdl.io/1.1.3/material.orange-indigo.min.css" rel="stylesheet">
+	<script defer src="https://code.getmdl.io/1.1.3/material.min.js">
+	</script>
+	<link href='https://cdnjs.cloudflare.com/ajax/libs/dialog-polyfill/0.4.2/dialog-polyfill.min.css' rel='stylesheet prefetch'>
+	<script src='https://cdnjs.cloudflare.com/ajax/libs/dialog-polyfill/0.4.2/dialog-polyfill.min.js'>
+	</script>
+	<link href="https://fonts.googleapis.com/css?family=Roboto:regular,bold,italic,thin,light,bolditalic,black,medium&amp;lang=en" rel="stylesheet">
+	<link href="style.css" rel="stylesheet">
+</head>
+<body>
+	<div class="demo-layout mdl-layout mdl-js-layout mdl-layout--fixed-header">
+		<!-- Header section containing logo -->
+
+		<header class="mdl-layout__header mdl-color-text--white mdl-color--light-blue-700">
+			<div class="mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-grid">
+				<div class="mdl-layout__header-row mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-cell--12-col-desktop">
+					<h3><i class="title-icon material-icons">speaker_notes</i> Awesome Chat</h3>
+				</div>
+				<div id="user-container">
+					<span class="mdl-button mdl-js-button mdl-js-ripple-effect mdl-color-text--white">
+					<img class='user-avatar user-avatar-small' id='current-user-picture' src="" />
+					<span id='current-user-name'></span></span>
+					<button class="mdl-button mdl-js-button mdl-js-ripple-effect mdl-color-text--white" hidden1="" id="sign-out-button">Sign-out</button>
+				</div>
+			</div>
+		</header>
+
+		<main class="mdl-layout__content mdl-color--grey-100">
+			<div class="mdl-cell mdl-cell--12-col mdl-grid" id="messages-card-container">
+				<div class="mdl-card mdl-shadow--2dp mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-cell--12-col-desktop">
+					<div class="mdl-card__title">
+						<h2 class="mdl-card__title-text">Realtime chat with Firebase!</h2>
+					</div>
+
+					<div class="mdl-card__actions mdl-card--border">
+						<a class="mdl-button mdl-js-button mdl-js-ripple-effect" href="http://aliashraf.net">Get Help</a>
+					</div>
+				</div>
+				<!-- Messages container -->
+
+				<div class="mdl-card mdl-shadow--2dp mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-cell--12-col-desktop" id="messages-card">
+					<div class="mdl-card__supporting-text mdl-color-text--grey-600">
+						<div id='messages'>
+							<ul class="demo-list-two mdl-list" id='messages-inner-container'>
+								<li class="mdl-list__item mdl-list__item--two-line" style="display:none;"><span class="mdl-list__item-primary-content">
+									<img class='user-avatar' src="http://graph.facebook.com/593347088/picture" />
+									<span class='user-name'>Bryan Cranston</span> <span class="mdl-list__item-sub-title user-message">62 Episodes</span></span>
+								</li>
+							</ul>
+						</div>
+
+						<form action="#" id="message-form" name="message-form">
+							<div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+								<input class="mdl-textfield__input" id="message-box" type="text"> <label class="mdl-textfield__label" for="message">Message...</label>
+							</div>
+							<button class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect" id="send-button" type="submit">Send</button>
+						</form>
+					</div>
+				</div>
+
+				<div class="mdl-js-snackbar mdl-snackbar" id="must-signin-snackbar">
+					<div class="mdl-snackbar__text">
+					</div>
+					<button class="mdl-snackbar__action" type="button"></button>
+				</div>
+			</div>
+		</main>
+	</div>
+
+	<dialog class="mdl-dialog" id="dialog">
+		<h3 class="mdl-dialog__title">Please sign-in to chat.</h3>
+		<div class="mdl-dialog__content">
+			<p>Yepp, that's really needed.</p>
+		</div>
+		<div class="mdl-dialog__actions">
+			<button class="mdl-button mdl-js-button mdl-button--raised mdl-button--accent signin-button" data-network='google' type="button">Google</button> <button class="mdl-button mdl-js-button mdl-button--raised mdl-button--accent signin-button" data-network='facebook' type="button">Facebook</button> <button class="mdl-button mdl-js-button mdl-button--raised mdl-button--accent signin-button" data-network='twitter' type="button">Twitter</button>
+		</div>
+	</dialog>
+
+	<script src="https://code.jquery.com/jquery-3.1.1.min.js"></script>
+	<script src="https://www.gstatic.com/firebasejs/3.5.1/firebase.js"></script>
+
+	<script>
+	$(function() {
+
+		// config files here...
+		var config = {
+			apiKey: "AIzaSyDzEexc9mPSr2duStvymJa9HDJyc2S-0iA",
+			authDomain: "awesomechat-c8077.firebaseapp.com",
+			databaseURL: "https://awesomechat-c8077.firebaseio.com",
+			storageBucket: "awesomechat-c8077.appspot.com",
+			messagingSenderId: "829952446458"
+		};
+
+		// initializing firebase via config
+		firebase.initializeApp(config);
+		var database = firebase.database();
+		var auth = firebase.auth();
+
+		// signin dialog
+		var dialog = $('#dialog')[0];
+		if (!dialog.showModal) {
+			// using polyfill for older browsers
+			dialogPolyfill.registerDialog(dialog);
+		}
+
+		var userContainer = $("#user-container");
+		userContainer.hide();
+
+		// check if the user is logged in or not
+		auth.onAuthStateChanged(function(user) {
+		  if (user) {
+			// User is signed in.
+
+			// show and update user info on header
+			userContainer.show();
+			$("#current-user-name").text(user.displayName);
+			$("#current-user-picture").attr("src", user.photoURL);
+
+			try {
+				// close the signin dialog
+				// throws error if not open
+				dialog.close();
+			} catch(e) {}
+
+			// when signout button is clicked
+			$("#sign-out-button").click(function() {
+
+				// sign it out.
+				auth.signOut().then(function() {
+					window.location.reload();
+				}, function(error) {
+				  // An error happened.
+				});
+
+			});
+
+			// now the core code for sending/receiving chat
+
+			// when send button is clicked
+			$("#send-button").click(function() {
+				var message = $("#message-box").val();
+
+				// update message to DB
+				database.ref("/").set({
+					"message": message,
+					"time": +new Date(),
+					"sender": {
+						"name": user.displayName,
+						"picture": user.photoURL,
+					}
+				});
+
+				// clear message box
+				$("#message-box").val("")
+			});
+
+			// when message is changed on DB
+			database.ref("/").on('value', function(snapshot) {
+				var value = snapshot.val();
+
+				// and value is valid
+				if(value != null && 'message' in value && 'sender' in value) {
+
+					// create a new message item in container (via cloning)
+					var container = $("#messages-inner-container");
+					var newItem = container.children(":first").clone();
+
+					// set its values
+					newItem.find(".user-name").text(value.sender.name);
+					newItem.find(".user-avatar").attr("src", value.sender.picture);
+					newItem.find(".user-message").text(value.message);
+
+					// and show it
+					container.append(newItem);
+					newItem.show();
+				}
+			});
+
+		  } else {
+			// user is not authenticated
+
+			// hide user info from header
+			userContainer.hide();
+
+			// show signin dialog
+			dialog.showModal();
+
+			// when signin button on dialog is clicked
+			$(".signin-button").one('click', function() {
+				var network = $(this).attr('data-network');
+				var provider = null;
+
+				// get the network (check which button was clicked)
+				// and make provider depending on it
+				// (code below can be shrinked to 1 line as well)
+				if(network == 'google') {
+					provider = new firebase.auth.GoogleAuthProvider();
+				} else if(network == 'facebook') {
+					provider = new firebase.auth.FacebookAuthProvider();
+				} else if(network == 'twitter') {
+					provider = new firebase.auth.TwitterAuthProvider();
+				}
+
+				// signin using the provider 
+				firebase.auth().signInWithPopup(provider).then(function(result) {
+					// when authentication is successful.
+					// auth.onAuthStateChanged is called again (in background)
+
+				}).catch(function(error) {
+					// when an authentication error comes in.
+					alert(error.message);
+					window.location.reload();
+				});
+
+			});
+
+		  }
+		});
+
+	}());
+	</script>
+
+</body>
+</html>
